@@ -1,7 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'screens/welcome_screen.dart';
-// NOTA: Tus compañeros deberán importar sus pantallas aquí cuando las creen.
+import 'screens/workshop_list_screen.dart';
 
 void main() {
   runApp(const TalleresApp());
@@ -26,7 +26,7 @@ class TalleresApp extends StatelessWidget {
 
         // --- TAREAS PARA TUS COMPAÑEROS ---
         // El Integrante 2 debe crear WorkshopListScreen() y descomentar esto:
-        // '/talleres': (context) => const WorkshopListScreen(),
+        '/talleres': (context) => const WorkshopListScreen(),
 
         // El Integrante 3 debe crear RegistrationScreen() y descomentar esto:
         // '/registro': (context) => const RegistrationScreen(),
