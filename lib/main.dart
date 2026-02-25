@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/workshop_list_screen.dart';
+import 'screens/registration_screen.dart';
 
 void main() {
   runApp(const TalleresApp());
@@ -29,7 +30,7 @@ class TalleresApp extends StatelessWidget {
         '/talleres': (context) => const WorkshopListScreen(),
 
         // El Integrante 3 debe crear RegistrationScreen() y descomentar esto:
-        // '/registro': (context) => const RegistrationScreen(),
+        '/registro': (context) => const RegistrationScreen(),
       },
     );
   }
