@@ -9,12 +9,13 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
-  // Llave para validar el formulario
   final _formKey = GlobalKey<FormState>();
 
-  // Variables de estado
-  String? _selectedWorkshop;
+  // --- CAMBIOS EN EL ESTADO ---
+  // Ahora usamos una lista para guardar múltiples selecciones
+  final List<String> _selectedWorkshops = [];
   String? _selectedModality;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
 
@@ -35,10 +36,23 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   void _submitForm() {
+    // Validación personalizada para los checkboxes
+    if (_selectedWorkshops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona al menos un taller'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('¡Registro exitoso para ${_nameController.text}!'),
+          content: Text(
+            '¡Registro exitoso para ${_nameController.text}! (${_selectedWorkshops.length} talleres)',
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
@@ -70,6 +84,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
               const SizedBox(height: 20),
 
+              // Campo: Nombre
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -83,6 +98,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Campo: Email
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -94,35 +110,45 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty)
                     return 'Por favor ingresa tu correo';
-                  if (!value.contains('@'))
-                    return 'Ingresa un correo válido con "@"';
+                  if (!value.contains('@')) return 'Ingresa un correo válido';
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Taller de interés',
-                  prefixIcon: Icon(Icons.book),
-                  border: OutlineInputBorder(),
-                ),
-                value: _selectedWorkshop,
-                items: _workshops
-                    .map(
-                      (String workshop) => DropdownMenuItem(
-                        value: workshop,
-                        child: Text(workshop),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (newValue) =>
-                    setState(() => _selectedWorkshop = newValue),
-                validator: (value) =>
-                    value == null ? 'Selecciona un taller' : null,
+              // --- SECCIÓN DE CHECKBOXES PARA TALLERES ---
+              const Text(
+                'Selecciona los talleres de interés:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  children: _workshops.map((workshop) {
+                    return CheckboxListTile(
+                      title: Text(workshop),
+                      value: _selectedWorkshops.contains(workshop),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (bool? checked) {
+                        setState(() {
+                          if (checked == true) {
+                            _selectedWorkshops.add(workshop);
+                          } else {
+                            _selectedWorkshops.remove(workshop);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
 
+              // Campo: Modality (Se queda como Dropdown ya que suele ser opción única)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: 'Modalidad preferida',
@@ -131,12 +157,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
                 value: _selectedModality,
                 items: _modalities
-                    .map(
-                      (String modality) => DropdownMenuItem(
-                        value: modality,
-                        child: Text(modality),
-                      ),
-                    )
+                    .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                     .toList(),
                 onChanged: (newValue) =>
                     setState(() => _selectedModality = newValue),
