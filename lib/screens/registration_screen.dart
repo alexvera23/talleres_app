@@ -1,5 +1,7 @@
-// lib/screens/registration_screen.dart
 import 'package:flutter/material.dart';
+
+import '../models/registration_model.dart';
+import '../services/database_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -10,14 +12,16 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // --- CAMBIOS EN EL ESTADO ---
-  // Ahora usamos una lista para guardar múltiples selecciones
   final List<String> _selectedWorkshops = [];
   String? _selectedModality;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+
+  final RegExp _nameRegex = RegExp(r"^[A-Za-zÁÉÍÓÚáéíóúÑñ'\- ]{3,60}$");
+  final RegExp _emailRegex = RegExp(
+    r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+  );
 
   final List<String> _workshops = [
     'Flutter',
@@ -28,6 +32,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   ];
   final List<String> _modalities = ['Presencial', 'Híbrida', 'En línea'];
 
+  bool _isSaving = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -35,8 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
-  void _submitForm() {
-    // Validación personalizada para los checkboxes
+  Future<void> _submitForm() async {
     if (_selectedWorkshops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -47,20 +52,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    if (_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    final registration = Registration(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim().toLowerCase(),
+      workshops: _selectedWorkshops.join(', '),
+      modality: _selectedModality!,
+    );
+
+    try {
+      await DatabaseService.instance.insertRegistration(registration);
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '¡Registro exitoso para ${_nameController.text}! (${_selectedWorkshops.length} talleres)',
+            '¡Registro exitoso para ${_nameController.text.trim()}! (${_selectedWorkshops.length} talleres)',
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
         ),
       );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) Navigator.popUntil(context, ModalRoute.withName('/'));
+      _formKey.currentState?.reset();
+      _nameController.clear();
+      _emailController.clear();
+      setState(() {
+        _selectedWorkshops.clear();
+        _selectedModality = null;
       });
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -83,8 +112,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-
-              // Campo: Nombre
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -92,13 +119,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   prefixIcon: Icon(Icons.person),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => (value == null || value.isEmpty)
-                    ? 'Por favor ingresa tu nombre'
-                    : null,
+                validator: (value) {
+                  final sanitized = value?.trim() ?? '';
+                  if (sanitized.isEmpty) {
+                    return 'Por favor ingresa tu nombre';
+                  }
+                  if (!_nameRegex.hasMatch(sanitized)) {
+                    return 'Solo letras, espacios, guiones y apóstrofes (3-60)';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
-
-              // Campo: Email
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -108,15 +140,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  final sanitized = value?.trim() ?? '';
+                  if (sanitized.isEmpty) {
                     return 'Por favor ingresa tu correo';
-                  if (!value.contains('@')) return 'Ingresa un correo válido';
+                  }
+                  if (!_emailRegex.hasMatch(sanitized)) {
+                    return 'Ingresa un correo válido';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 24),
-
-              // --- SECCIÓN DE CHECKBOXES PARA TALLERES ---
               const Text(
                 'Selecciona los talleres de interés:',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -147,8 +181,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Campo: Modality (Se queda como Dropdown ya que suele ser opción única)
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: 'Modalidad preferida',
@@ -165,17 +197,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     value == null ? 'Selecciona una modalidad' : null,
               ),
               const SizedBox(height: 32),
-
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _isSaving ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text(
-                  'Confirmar Registro',
-                  style: TextStyle(fontSize: 18),
+                child: Text(
+                  _isSaving ? 'Guardando...' : 'Confirmar Registro',
+                  style: const TextStyle(fontSize: 18),
                 ),
               ),
             ],
