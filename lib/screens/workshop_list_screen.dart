@@ -109,7 +109,6 @@ class WorkshopListScreen extends StatelessWidget {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                // Navega al formulario (que hará el Integrante 3)
                 Navigator.pushNamed(context, '/registro');
               },
               style: ElevatedButton.styleFrom(
@@ -121,6 +120,14 @@ class WorkshopListScreen extends StatelessWidget {
                 'Ir al Formulario de Registro',
                 style: TextStyle(fontSize: 18),
               ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/usuarios-registrados');
+              },
+              icon: const Icon(Icons.group),
+              label: const Text('Ver usuarios registrados'),
             ),
           ],
         ),

@@ -1,10 +1,22 @@
-// lib/main.dart
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'screens/registered_users_screen.dart';
+import 'screens/registration_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/workshop_list_screen.dart';
-import 'screens/registration_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   runApp(const TalleresApp());
 }
 
@@ -20,17 +32,12 @@ class TalleresApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // La ruta '/' es la pantalla inicial
       initialRoute: '/',
       routes: {
         '/': (context) => const WelcomeScreen(),
-
-        // --- TAREAS PARA TUS COMPAÑEROS ---
-        // El Integrante 2 debe crear WorkshopListScreen() y descomentar esto:
         '/talleres': (context) => const WorkshopListScreen(),
-
-        // El Integrante 3 debe crear RegistrationScreen() y descomentar esto:
         '/registro': (context) => const RegistrationScreen(),
+        '/usuarios-registrados': (context) => const RegisteredUsersScreen(),
       },
     );
   }
